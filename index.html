@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShortLink - URL Shortener GitHub Pages</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-md">
+                    <i class="fa-solid fa-link text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">ShortLink <span class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-medium ml-1">JSON Edition</span></h1>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="openGuideModal()" class="text-xs sm:text-sm font-medium text-slate-600 hover:text-brand-600 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-circle-question"></i>
+                    <span>Cara Deploy</span>
+                </button>
+                <button onclick="exportJSON()" class="text-xs sm:text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden sm:inline">Ekspor</span> links.json
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Redirect Overlay Status (Visible when handling a shortlink redirect) -->
+        <div id="redirectBanner" class="hidden mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="animate-spin text-brand-600 text-xl">
+                    <i class="fa-solid fa-circle-notch"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-slate-900">Mengalihkan ke URL Tujuan...</p>
+                    <p id="redirectTargetText" class="text-xs text-slate-500 font-mono"></p>
+                </div>
+            </div>
+            <a id="redirectDirectBtn" href="#" class="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700">Klik Jika Tidak Beralih</a>
+        </div>
+
+        <!-- URL Shortener Hero Box -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-8">
+            <div class="max-w-2xl mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">Buat Link Pendek Baru</h2>
+                <p class="text-sm text-slate-500 mt-1">Masukkan URL panjang dan tentukan kode kustom jika diperlukan. Data disimpan di LocalStorage &amp; bisa diekspor ke file <code class="bg-slate-100 px-1 py-0.5 rounded text-xs font-mono text-slate-700">links.json</code>.</p>
+            </div>
+
+            <form id="shortenForm" onsubmit="handleShorten(event)" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <!-- Long URL Input -->
+                    <div class="md:col-span-7">
+                        <label for="longUrl" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">URL Asli / Panjang</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-globe"></i>
+                            </div>
+                            <input type="url" id="longUrl" required placeholder="https://example.com/artike-sangat-panjang-123" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm transition">
+                        </div>
+                    </div>
+
+                    <!-- Custom Slug Input -->
+                    <div class="md:col-span-5">
+                        <label for="customSlug" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Kode Kustom (Opsional)</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-hashtag"></i>
+                            </div>
+                            <input type="text" id="customSlug" placeholder="promo-2026" pattern="[a-zA-Z0-9-_]+" title="Hanya huruf, angka, strip, dan underscore" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm transition">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Shorten Link</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Links List Table Section -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-lg">Daftar Link Terdaftar</h3>
+                    <p class="text-xs text-slate-500">Total: <span id="linkCount" class="font-bold text-slate-700">0</span> link tersimpan</p>
+                </div>
+                
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <!-- Search Input -->
+                    <div class="relative flex-1 sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="searchInput" oninput="renderLinks()" placeholder="Cari link atau slug..." class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <!-- Import JSON Button -->
+                    <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-file-import"></i>
+                        <span class="hidden md:inline">Impor JSON</span>
+                        <input type="file" id="importFileInput" accept=".json" onchange="importJSON(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                        <tr>
+                            <th class="py-3 px-4 font-semibold">Kode / Slug</th>
+                            <th class="py-3 px-4 font-semibold">URL Tujuan</th>
+                            <th class="py-3 px-4 font-semibold text-center">Klik</th>
+                            <th class="py-3 px-4 font-semibold">Tgl Dibuat</th>
+                            <th class="py-3 px-4 font-semibold text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linksTableBody" class="divide-y divide-slate-100">
+                        <!-- Dynamic content populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden py-12 text-center">
+                <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-between mx-auto mb-3 justify-center">
+                    <i class="fa-solid fa-link-slash text-2xl"></i>
+                </div>
+                <p class="font-semibold text-slate-700">Belum ada link tersimpan</p>
+                <p class="text-xs text-slate-400 mt-1">Buat link baru atau impor dari file <code class="bg-slate-100 px-1 py-0.5 rounded">links.json</code> Anda.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Custom Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage" class="text-sm font-medium">Notifikasi</span>
+    </div>
+
+    <!-- Deploy Guide Modal -->
+    <div id="guideModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative">
+            <button onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-brands fa-github text-brand-600"></i>
+                Panduan Deploy ke GitHub Pages
+            </h3>
+
+            <div class="space-y-4 text-sm text-slate-600">
+                <p>Ikuti langkah-langkah mudah ini untuk membuat URL Shortener aktif secara penuh di GitHub Pages secara <strong>GRATIS</strong>:</p>
+
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="bg-brand-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
+                        <div>
+                            <p class="font-semibold text-slate-800">Buat Repositori GitHub Baru</p>
+                            <p class="text-xs text-slate-500">Buka GitHub, buat repository bernama <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">sort-link</code> (atau sesuai keinginan) dan atur ke Public.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="bg-brand-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
+                        <div>
+                            <p class="font-semibold text-slate-800">Unggah File HTML ini sebagai index.html</p>
+                            <p class="text-xs text-slate-500">Simpan kode file ini dengan nama <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">index.html</code> dan upload/commit ke repository utama.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="bg-brand-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
+                        <div>
+                            <p class="font-semibold text-slate-800">Simpan File links.json di GitHub</p>
+                            <p class="text-xs text-slate-500">Klik tombol <strong>"Ekspor links.json"</strong> di aplikasi ini, lalu unggah file <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">links.json</code> tersebut ke folder utama repositori GitHub Anda.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="bg-brand-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">4</span>
+                        <div>
+                            <p class="font-semibold text-slate-800">Aktifkan GitHub Pages</p>
+                            <p class="text-xs text-slate-500">Masuk ke menu <strong>Settings &gt; Pages</strong> di repo GitHub Anda. Pilih Branch <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">main</code> / <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">root</code> dan klik Save.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+                    <i class="fa-solid fa-lightbulb text-amber-600 mt-0.5"></i>
+                    <div>
+                        <strong class="block mb-0.5">Cara Penggunaan Link Pendek:</strong>
+                        Pengunjung cukup membuka URL dengan parameter: <br>
+                        <code class="bg-amber-100 px-1 rounded font-mono">https://username.github.io/repo-name/?go=kodenya</code> <br>
+                        Aplikasi akan membaca `links.json` dan otomatis mengarahkan ke URL tujuan!
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeGuideModal()" class="bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-slate-800 transition">Mengerti</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Storage Keys & Constants
+        const LOCAL_STORAGE_KEY = 'github_shortlink_db';
+        const JSON_FILE_NAME = 'links.json';
+
+        // Initial Data Structure
+        let linkDatabase = [];
+
+        // Sample Data Fallback if completely empty
+        const defaultSamples = [
+            {
+                slug: 'google',
+                url: 'https://www.google.com',
+                clicks: 12,
+                createdAt: new Date().toISOString()
+            },
+            {
+                slug: 'github',
+                url: 'https://github.com',
+                clicks: 34,
+                createdAt: new Date().toISOString()
+            }
+        ];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            // First: Try loading local storage
+            loadFromLocalStorage();
+
+            // Second: Try fetching remote links.json from the same host (if deployed on GitHub Pages)
+            await syncWithRemoteJSON();
+
+            // Third: Check if current URL contains a shortcode parameter (e.g., ?go=kodenya or #kodenya)
+            handleRedirectLogic();
+
+            // Render UI
+            renderLinks();
+        });
+
+        // Load LocalStorage Data
+        function loadFromLocalStorage() {
+            const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (stored) {
+                try {
+                    linkDatabase = JSON.parse(stored);
+                } catch (e) {
+                    console.error("Gagal membaca LocalStorage", e);
+                    linkDatabase = [...defaultSamples];
+                }
+            } else {
+                linkDatabase = [...defaultSamples];
+                saveToLocalStorage();
+            }
+        }
+
+        // Save Data to LocalStorage
+        function saveToLocalStorage() {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(linkDatabase));
+        }
+
+        // Fetch remote links.json if available on server
+        async function syncWithRemoteJSON() {
+            try {
+                const response = await fetch(JSON_FILE_NAME, { cache: 'no-store' });
+                if (response.ok) {
+                    const remoteData = await response.json();
+                    if (Array.isArray(remoteData)) {
+                        // Merge remote data with local data (prioritize remote if conflict)
+                        const mergedMap = new Map();
+                        linkDatabase.forEach(item => mergedMap.set(item.slug, item));
+                        remoteData.forEach(item => mergedMap.set(item.slug, item));
+                        
+                        linkDatabase = Array.from(mergedMap.values());
+                        saveToLocalStorage();
+                    }
+                }
+            } catch (err) {
+                // Ignore error if running purely locally or links.json not uploaded yet
+                console.log("Remote links.json belum tersedia atau berjalan lokal.");
+            }
+        }
+
+        // Handle URL parameter redirect (e.g., index.html?go=slug or index.html#slug)
+        function handleRedirectLogic() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let targetSlug = urlParams.get('go') || urlParams.get('s');
+
+            // Fallback check Hash if query param is empty
+            if (!targetSlug && window.location.hash) {
+                targetSlug = window.location.hash.substring(1);
+            }
+
+            if (targetSlug) {
+                const matchedItem = linkDatabase.find(item => item.slug.toLowerCase() === targetSlug.toLowerCase());
+
+                if (matchedItem) {
+                    // Show redirect banner
+                    const banner = document.getElementById('redirectBanner');
+                    const targetText = document.getElementById('redirectTargetText');
+                    const directBtn = document.getElementById('redirectDirectBtn');
+
+                    banner.classList.remove('hidden');
+                    targetText.innerText = matchedItem.url;
+                    directBtn.href = matchedItem.url;
+
+                    // Increment Click Count
+                    matchedItem.clicks = (matchedItem.clicks || 0) + 1;
+                    saveToLocalStorage();
+
+                    // Redirect after 1 second
+                    setTimeout(() => {
+                        window.location.href = matchedItem.url;
+                    }, 800);
+                } else {
+                    showToast('Link pendek tidak ditemukan dalam database!', 'error');
+                }
+            }
+        }
+
+        // Generate Random String for Slugs
+        function generateRandomSlug(length = 6) {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // Handle Shorten Form Submit
+        function handleShorten(event) {
+            event.preventDefault();
+            
+            const longUrlInput = document.getElementById('longUrl');
+            const customSlugInput = document.getElementById('customSlug');
+
+            let url = longUrlInput.value.trim();
+            let slug = customSlugInput.value.trim();
+
+            if (!url) return;
+
+            // Ensure protocol exists
+            if (!/^https?:\/\//i.test(url)) {
+                url = 'https://' + url;
+            }
+
+            // Generate slug if empty
+            if (!slug) {
+                slug = generateRandomSlug(5);
+            }
+
+            // Check slug conflict
+            const existingIndex = linkDatabase.findIndex(item => item.slug.toLowerCase() === slug.toLowerCase());
+            if (existingIndex !== -1) {
+                showToast('Kode / Slug ini sudah digunakan. Pilih kode lain!', 'error');
+                return;
+            }
+
+            // Create new record
+            const newLink = {
+                slug: slug,
+                url: url,
+                clicks: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            linkDatabase.unshift(newLink);
+            saveToLocalStorage();
+            renderLinks();
+
+            // Reset form
+            longUrlInput.value = '';
+            customSlugInput.value = '';
+
+            showToast(`Link pendek berhasil dibuat: ?go=${slug}`);
+        }
+
+        // Delete Link
+        function deleteLink(slug) {
+            if (confirm(`Apakah Anda yakin ingin menghapus link "?go=${slug}"?`)) {
+                linkDatabase = linkDatabase.filter(item => item.slug !== slug);
+                saveToLocalStorage();
+                renderLinks();
+                showToast('Link berhasil dihapus');
+            }
+        }
+
+        // Copy Short URL to Clipboard
+        function copyShortUrl(slug) {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const fullShortUrl = `${baseUrl}?go=${slug}`;
+
+            // Clipboard API with ExecCommand Fallback
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(fullShortUrl).then(() => {
+                    showToast('URL Pendek berhasil disalin!');
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(fullShortUrl);
+                });
+            } else {
+                fallbackCopyTextToClipboard(fullShortUrl);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('URL Pendek berhasil disalin!');
+            } catch (err) {
+                showToast('Gagal menyalin URL', 'error');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // Render Table Rows
+        function renderLinks() {
+            const tbody = document.getElementById('linksTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const countEl = document.getElementById('linkCount');
+
+            tbody.innerHTML = '';
+
+            const filteredLinks = linkDatabase.filter(item => 
+                item.slug.toLowerCase().includes(searchInput) || 
+                item.url.toLowerCase().includes(searchInput)
+            );
+
+            countEl.innerText = linkDatabase.length;
+
+            if (filteredLinks.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            const baseUrl = window.location.origin + window.location.pathname;
+
+            filteredLinks.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+
+                const formattedDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                }) : '-';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold text-brand-600">
+                        <a href="${baseUrl}?go=${item.slug}" target="_blank" class="hover:underline flex items-center gap-1">
+                            ?go=${item.slug}
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-60"></i>
+                        </a>
+                    </td>
+                    <td class="py-3 px-4 max-w-xs truncate">
+                        <a href="${item.url}" target="_blank" rel="noopener font-medium text-slate-700 hover:text-brand-600" title="${item.url}">
+                            ${item.url}
+                        </a>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="bg-slate-100 text-slate-700 font-semibold px-2.5 py-1 rounded-full text-xs">
+                            ${item.clicks || 0}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-xs text-slate-400">
+                        ${formattedDate}
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        <div class="flex items-center justify-end gap-1 sm:gap-2">
+                            <button onclick="copyShortUrl('${item.slug}')" title="Salin URL Pendek" class="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                            <button onclick="deleteLink('${item.slug}')" title="Hapus Link" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Export Database as links.json file
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(linkDatabase, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", JSON_FILE_NAME);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('File links.json berhasil diunduh!');
+        }
+
+        // Import Database from links.json file
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        linkDatabase = importedData;
+                        saveToLocalStorage();
+                        renderLinks();
+                        showToast('Berhasil mengimpor file JSON!');
+                    } else {
+                        showToast('Format JSON tidak valid (Harus berupa array)', 'error');
+                    }
+                } catch (err) {
+                    showToast('Gagal membaca file JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            // Reset file input
+            event.target.value = '';
+        }
+
+        // Show Toast Notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMessage.innerText = message;
+
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Modal Controls
+        function openGuideModal() {
+            document.getElementById('guideModal').classList.remove('hidden');
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guideModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
