@@ -34,7 +34,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
 
     <!-- Navigation Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <header id="adminHeader" class="bg-white border-b border-slate-200 sticky top-0 z-30">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="bg-brand-600 text-white p-2 rounded-xl shadow-md">
@@ -57,21 +57,8 @@
         </div>
     </header>
 
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Redirect Overlay Status (Visible when handling a shortlink redirect) -->
-        <div id="redirectBanner" class="hidden mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="animate-spin text-brand-600 text-xl">
-                    <i class="fa-solid fa-circle-notch"></i>
-                </div>
-                <div>
-                    <p class="font-semibold text-slate-900">Mengalihkan ke URL Tujuan...</p>
-                    <p id="redirectTargetText" class="text-xs text-slate-500 font-mono"></p>
-                </div>
-            </div>
-            <a id="redirectDirectBtn" href="#" class="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700">Klik Jika Tidak Beralih</a>
-        </div>
+    <!-- Main Admin View -->
+    <main id="adminMain" class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <!-- URL Shortener Hero Box -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-8">
@@ -89,7 +76,7 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                 <i class="fa-solid fa-globe"></i>
                             </div>
-                            <input type="url" id="longUrl" required placeholder="https://example.com/artike-sangat-panjang-123" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm transition">
+                            <input type="url" id="longUrl" required placeholder="https://example.com/artikel-sangat-panjang-123" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm transition">
                         </div>
                     </div>
 
@@ -157,7 +144,7 @@
 
             <!-- Empty State -->
             <div id="emptyState" class="hidden py-12 text-center">
-                <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-between mx-auto mb-3 justify-center">
+                <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
                     <i class="fa-solid fa-link-slash text-2xl"></i>
                 </div>
                 <p class="font-semibold text-slate-700">Belum ada link tersimpan</p>
@@ -166,76 +153,85 @@
         </section>
     </main>
 
-    <!-- Custom Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
-        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
-        <span id="toastMessage" class="text-sm font-medium">Notifikasi</span>
+    <!-- Dedicated Redirect Screen (Only visible when opening a shortlink) -->
+    <div id="redirectScreen" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6 border border-slate-100">
+            <!-- Loading State -->
+            <div id="redirectLoadingState">
+                <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-bounce">
+                    <i class="fa-solid fa-bolt text-2xl"></i>
+                </div>
+                <h2 class="text-xl font-bold text-slate-900">Mengalihkan Anda...</h2>
+                <p class="text-xs text-slate-500 mt-1">Mohon tunggu sebentar, Anda sedang diarahkan ke URL tujuan.</p>
+                
+                <div class="my-6 p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Target Link</p>
+                    <p id="redirectTargetText" class="text-sm font-mono text-brand-600 truncate font-medium">https://...</p>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <a id="redirectDirectBtn" href="#" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-brand-500/30 transition text-sm flex items-center justify-center gap-2">
+                        <span>Buka Link Sekarang</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Error 404 State -->
+            <div id="redirectErrorState" class="hidden">
+                <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-link-slash text-2xl"></i>
+                </div>
+                <h2 class="text-xl font-bold text-slate-900">Link Tidak Ditemukan</h2>
+                <p class="text-xs text-slate-500 mt-1">Kode kustom atau shortlink ini tidak terdaftar di database.</p>
+
+                <div class="mt-6">
+                    <button onclick="showAdminView()" class="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition">
+                        <i class="fa-solid fa-house"></i>
+                        <span>Ke Halaman Utama</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Deploy Guide Modal -->
     <div id="guideModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative">
-            <button onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 relative">
+            <button onclick="closeGuideModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
-            
-            <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <i class="fa-brands fa-github text-brand-600"></i>
-                Panduan Deploy ke GitHub Pages
-            </h3>
-
-            <div class="space-y-4 text-sm text-slate-600">
-                <p>Ikuti langkah-langkah mudah ini untuk membuat URL Shortener aktif secara penuh di GitHub Pages secara <strong>GRATIS</strong>:</p>
-
-                <div class="space-y-3">
-                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <span class="bg-brand-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
-                        <div>
-                            <p class="font-semibold text-slate-800">Buat Repositori GitHub Baru</p>
-                            <p class="text-xs text-slate-500">Buka GitHub, buat repository bernama <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">sort-link</code> (atau sesuai keinginan) dan atur ke Public.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <span class="bg-brand-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
-                        <div>
-                            <p class="font-semibold text-slate-800">Unggah File HTML ini sebagai index.html</p>
-                            <p class="text-xs text-slate-500">Simpan kode file ini dengan nama <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">index.html</code> dan upload/commit ke repository utama.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <span class="bg-brand-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
-                        <div>
-                            <p class="font-semibold text-slate-800">Simpan File links.json di GitHub</p>
-                            <p class="text-xs text-slate-500">Klik tombol <strong>"Ekspor links.json"</strong> di aplikasi ini, lalu unggah file <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">links.json</code> tersebut ke folder utama repositori GitHub Anda.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <span class="bg-brand-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">4</span>
-                        <div>
-                            <p class="font-semibold text-slate-800">Aktifkan GitHub Pages</p>
-                            <p class="text-xs text-slate-500">Masuk ke menu <strong>Settings &gt; Pages</strong> di repo GitHub Anda. Pilih Branch <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">main</code> / <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">root</code> dan klik Save.</p>
-                        </div>
-                    </div>
+            <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div class="bg-brand-50 text-brand-600 p-3 rounded-xl">
+                    <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
                 </div>
-
-                <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-800 flex items-start gap-2">
-                    <i class="fa-solid fa-lightbulb text-amber-600 mt-0.5"></i>
-                    <div>
-                        <strong class="block mb-0.5">Cara Penggunaan Link Pendek:</strong>
-                        Pengunjung cukup membuka URL dengan parameter: <br>
-                        <code class="bg-amber-100 px-1 rounded font-mono">https://username.github.io/repo-name/?go=kodenya</code> <br>
-                        Aplikasi akan membaca `links.json` dan otomatis mengarahkan ke URL tujuan!
-                    </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Cara Deploy di GitHub Pages</h3>
+                    <p class="text-xs text-slate-500">Panduan langkah demi langkah</p>
                 </div>
             </div>
+            
+            <ol class="space-y-3 text-xs text-slate-600 list-decimal pl-4">
+                <li class="pl-1">Buat repositori baru di GitHub (contoh: <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">sort-link</code>).</li>
+                <li class="pl-1">Upload file <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">index.html</code> ini ke repositori Anda.</li>
+                <li class="pl-1">Buat link pendek di web ini, lalu klik tombol <b>Ekspor links.json</b> di pojok kanan atas.</li>
+                <li class="pl-1">Upload file <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">links.json</code> tersebut ke repositori GitHub yang sama.</li>
+                <li class="pl-1">Buka menu <b>Settings > Pages</b> di GitHub, pilih branch <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">main</code>, lalu simpan.</li>
+                <li class="pl-1">Selesai! Akses link pendek Anda dengan format: <code class="bg-indigo-50 text-brand-700 px-1.5 py-0.5 rounded font-mono">https://username.github.io/sort-link/?go=kode-anda</code></li>
+            </ol>
 
-            <div class="mt-6 flex justify-end">
-                <button onclick="closeGuideModal()" class="bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-slate-800 transition">Mengerti</button>
+            <div class="pt-2">
+                <button onclick="closeGuideModal()" class="w-full bg-slate-900 text-white font-semibold py-2.5 rounded-xl text-xs hover:bg-slate-800 transition">
+                    Saya Mengerti
+                </button>
             </div>
         </div>
+    </div>
+
+    <!-- Custom Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage" class="text-sm font-medium">Notifikasi</span>
     </div>
 
     <script>
@@ -263,16 +259,16 @@
         ];
 
         window.addEventListener('DOMContentLoaded', async () => {
-            // First: Try loading local storage
+            // 1. Try loading local storage
             loadFromLocalStorage();
 
-            // Second: Try fetching remote links.json from the same host (if deployed on GitHub Pages)
+            // 2. Try fetching remote links.json from host if available
             await syncWithRemoteJSON();
 
-            // Third: Check if current URL contains a shortcode parameter (e.g., ?go=kodenya or #kodenya)
+            // 3. Check if current URL contains shortcode parameter (?go=slug or #slug)
             handleRedirectLogic();
 
-            // Render UI
+            // 4. Render UI
             renderLinks();
         });
 
@@ -304,7 +300,6 @@
                 if (response.ok) {
                     const remoteData = await response.json();
                     if (Array.isArray(remoteData)) {
-                        // Merge remote data with local data (prioritize remote if conflict)
                         const mergedMap = new Map();
                         linkDatabase.forEach(item => mergedMap.set(item.slug, item));
                         remoteData.forEach(item => mergedMap.set(item.slug, item));
@@ -314,12 +309,11 @@
                     }
                 }
             } catch (err) {
-                // Ignore error if running purely locally or links.json not uploaded yet
-                console.log("Remote links.json belum tersedia atau berjalan lokal.");
+                console.log("Remote links.json belum tersedia atau berjalan di preview.");
             }
         }
 
-        // Handle URL parameter redirect (e.g., index.html?go=slug or index.html#slug)
+        // Handle URL parameter redirect (index.html?go=slug or index.html#slug)
         function handleRedirectLogic() {
             const urlParams = new URLSearchParams(window.location.search);
             let targetSlug = urlParams.get('go') || urlParams.get('s');
@@ -330,15 +324,25 @@
             }
 
             if (targetSlug) {
+                // Hide main admin interface completely
+                document.getElementById('adminHeader').classList.add('hidden');
+                document.getElementById('adminMain').classList.add('hidden');
+                
+                // Show dedicated redirect screen
+                const redirectScreen = document.getElementById('redirectScreen');
+                const loadingState = document.getElementById('redirectLoadingState');
+                const errorState = document.getElementById('redirectErrorState');
+                redirectScreen.classList.remove('hidden');
+
                 const matchedItem = linkDatabase.find(item => item.slug.toLowerCase() === targetSlug.toLowerCase());
 
                 if (matchedItem) {
-                    // Show redirect banner
-                    const banner = document.getElementById('redirectBanner');
+                    loadingState.classList.remove('hidden');
+                    errorState.classList.add('hidden');
+
                     const targetText = document.getElementById('redirectTargetText');
                     const directBtn = document.getElementById('redirectDirectBtn');
 
-                    banner.classList.remove('hidden');
                     targetText.innerText = matchedItem.url;
                     directBtn.href = matchedItem.url;
 
@@ -346,17 +350,21 @@
                     matchedItem.clicks = (matchedItem.clicks || 0) + 1;
                     saveToLocalStorage();
 
-                    // Redirect after 1 second
+                    // Automatic redirect after short delay
                     setTimeout(() => {
                         window.location.href = matchedItem.url;
                     }, 800);
                 } else {
-                    showToast('Link pendek tidak ditemukan dalam database!', 'error');
+                    loadingState.classList.add('hidden');
+                    errorState.classList.remove('hidden');
                 }
             }
         }
 
-        // Generate Random String for Slugs
+        function showAdminView() {
+            window.location.href = window.location.pathname;
+        }
+
         function generateRandomSlug(length = 6) {
             const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             let result = '';
@@ -366,12 +374,11 @@
             return result;
         }
 
-        // Format Custom Slug Input (Replace spaces with hyphens automatically)
+        // Convert spaces to hyphens automatically in real-time
         function formatSlugInput(input) {
             input.value = input.value.replace(/\s+/g, '-');
         }
 
-        // Handle Shorten Form Submit
         function handleShorten(event) {
             event.preventDefault();
             
@@ -383,24 +390,20 @@
 
             if (!url) return;
 
-            // Ensure protocol exists
             if (!/^https?:\/\//i.test(url)) {
                 url = 'https://' + url;
             }
 
-            // Generate slug if empty
             if (!slug) {
                 slug = generateRandomSlug(5);
             }
 
-            // Check slug conflict
             const existingIndex = linkDatabase.findIndex(item => item.slug.toLowerCase() === slug.toLowerCase());
             if (existingIndex !== -1) {
                 showToast('Kode / Slug ini sudah digunakan. Pilih kode lain!', 'error');
                 return;
             }
 
-            // Create new record
             const newLink = {
                 slug: slug,
                 url: url,
@@ -412,29 +415,23 @@
             saveToLocalStorage();
             renderLinks();
 
-            // Reset form
             longUrlInput.value = '';
             customSlugInput.value = '';
 
             showToast(`Link pendek berhasil dibuat: ?go=${slug}`);
         }
 
-        // Delete Link
         function deleteLink(slug) {
-            if (confirm(`Apakah Anda yakin ingin menghapus link "?go=${slug}"?`)) {
-                linkDatabase = linkDatabase.filter(item => item.slug !== slug);
-                saveToLocalStorage();
-                renderLinks();
-                showToast('Link berhasil dihapus');
-            }
+            linkDatabase = linkDatabase.filter(item => item.slug !== slug);
+            saveToLocalStorage();
+            renderLinks();
+            showToast('Link berhasil dihapus');
         }
 
-        // Copy Short URL to Clipboard
         function copyShortUrl(slug) {
             const baseUrl = window.location.origin + window.location.pathname;
             const fullShortUrl = `${baseUrl}?go=${slug}`;
 
-            // Clipboard API with ExecCommand Fallback
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(fullShortUrl).then(() => {
                     showToast('URL Pendek berhasil disalin!');
@@ -464,7 +461,6 @@
             document.body.removeChild(textArea);
         }
 
-        // Render Table Rows
         function renderLinks() {
             const tbody = document.getElementById('linksTableBody');
             const emptyState = document.getElementById('emptyState');
@@ -534,7 +530,6 @@
             });
         }
 
-        // Export Database as links.json file
         function exportJSON() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(linkDatabase, null, 2));
             const downloadAnchor = document.createElement('a');
@@ -546,7 +541,6 @@
             showToast('File links.json berhasil diunduh!');
         }
 
-        // Import Database from links.json file
         function importJSON(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -568,11 +562,9 @@
                 }
             };
             reader.readAsText(file);
-            // Reset file input
             event.target.value = '';
         }
 
-        // Show Toast Notification
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toastMessage');
@@ -595,7 +587,6 @@
             }, 3000);
         }
 
-        // Modal Controls
         function openGuideModal() {
             document.getElementById('guideModal').classList.remove('hidden');
         }
